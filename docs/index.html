@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Document QA Service — Project Walkthrough</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f8fafc;
+    --bg-sidebar: #0f172a;
+    --sidebar-text: #cbd5e1;
+    --sidebar-text-dim: #64748b;
+    --sidebar-active: #818cf8;
+    --text: #1e293b;
+    --text-soft: #475569;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+    --code-comment: #64748b;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --blue-bg: #dbeafe;
+    --blue-border: #93c5fd;
+    --insight-bg: #f5f3ff;
+    --insight-border: #c4b5fd;
+    --warn-bg: #fffbeb;
+    --warn-border: #fcd34d;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --sidebar-w: 290px;
+    --mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg: #0b1120;
+    --bg-soft: #111827;
+    --bg-sidebar: #060912;
+    --text: #e2e8f0;
+    --text-soft: #cbd5e1;
+    --muted: #94a3b8;
+    --border: #1e293b;
+    --accent: #818cf8;
+    --accent-soft: #1e1b4b;
+    --code-bg: #060912;
+    --insight-bg: #1e1b4b;
+    --insight-border: #4338ca;
+    --warn-bg: #292218;
+    --warn-border: #92710f;
+    --blue-bg: #14213d;
+    --blue-border: #1d4ed8;
+    --green-bg: #052e16;
+    --amber-bg: #2c1c04;
+    --red-bg: #2c0b0e;
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    color: var(--sidebar-text);
+    overflow-y: auto;
+    padding: 28px 0 40px;
+    z-index: 100;
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+  .brand { padding: 0 26px 22px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 14px; }
+  .brand h1 { font-size: 17px; margin: 0 0 4px; color: #fff; letter-spacing: -.01em; }
+  .brand .tag { font-size: 12.5px; color: var(--sidebar-text-dim); }
+  .brand .pills { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .brand .pill {
+    font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 20px;
+    background: rgba(129,140,248,.15); color: #a5b4fc; letter-spacing: .02em;
+  }
+  nav { padding: 0 14px; }
+  nav .group-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--sidebar-text-dim); padding: 16px 12px 6px; font-weight: 700;
+  }
+  nav a {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 12px; border-radius: 7px;
+    color: var(--sidebar-text); text-decoration: none; font-size: 13.5px;
+    transition: background .12s, color .12s; margin-bottom: 1px;
+  }
+  nav a .num { font-size: 11px; color: var(--sidebar-text-dim); min-width: 16px; font-variant-numeric: tabular-nums; }
+  nav a:hover { background: rgba(255,255,255,.05); color: #fff; }
+  nav a.active { background: rgba(129,140,248,.16); color: #fff; }
+  nav a.active .num { color: var(--sidebar-active); }
+  .sidebar-foot { padding: 18px 26px 0; margin-top: 18px; border-top: 1px solid rgba(255,255,255,.08); display:flex; flex-direction:column; gap:12px; }
+  .sidebar-foot a { color: var(--sidebar-text-dim); font-size: 12.5px; text-decoration: none; }
+  .sidebar-foot a:hover { color: #fff; }
+  .theme-btn {
+    background: rgba(255,255,255,.06); color: var(--sidebar-text); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 8px; padding: 7px 12px; font-size: 12.5px; cursor: pointer; font-family: var(--sans);
+    display:flex; align-items:center; gap:8px; width: fit-content; transition: background .12s;
+  }
+  .theme-btn:hover { background: rgba(255,255,255,.12); }
+
+  /* ---------- Main ---------- */
+  main {
+    margin-left: var(--sidebar-w);
+    padding: 56px 56px 120px;
+    max-width: 940px;
+  }
+  section { scroll-margin-top: 24px; padding-bottom: 16px; }
+  section + section { padding-top: 30px; }
+  h2 {
+    font-size: 27px; letter-spacing: -.02em; margin: 8px 0 6px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--border);
+  }
+  h2 .kicker { display:block; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; border:0; }
+  h3 { font-size: 18.5px; letter-spacing: -.01em; margin: 28px 0 8px; }
+  h4 { font-size: 14.5px; margin: 22px 0 6px; color: var(--text-soft); }
+  p { color: var(--text-soft); margin: 12px 0; }
+  a { color: var(--accent); }
+  code {
+    font-family: var(--mono); font-size: .88em;
+    background: var(--accent-soft); color: var(--accent);
+    padding: 1.5px 6px; border-radius: 5px; white-space: nowrap;
+  }
+  [data-theme="dark"] code { color: #c7d2fe; }
+  strong { color: var(--text); font-weight: 650; }
+  ul, ol { color: var(--text-soft); padding-left: 22px; }
+  li { margin: 6px 0; }
+
+  .lead { font-size: 18px; color: var(--text-soft); line-height: 1.6; }
+
+  /* Hero */
+  .hero { background: linear-gradient(135deg, var(--accent-soft), transparent); border: 1px solid var(--border); border-radius: 16px; padding: 32px 34px; margin-bottom: 8px; }
+  .hero h2 { border: 0; padding: 0; font-size: 32px; margin: 0 0 10px; }
+  .hero .guarantee { display:inline-flex; align-items:center; gap:8px; margin-top:16px; background: var(--green-bg); color: var(--green); font-weight:600; font-size:13.5px; padding:7px 14px; border-radius:24px; }
+
+  /* Code blocks */
+  .code-block { position: relative; margin: 16px 0; border-radius: 11px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .code-head { display:flex; align-items:center; justify-content:space-between; background: #1e293b; padding: 7px 14px; }
+  [data-theme="dark"] .code-head { background: #111827; }
+  .code-head .fname { font-family: var(--mono); font-size: 12px; color: #94a3b8; }
+  .code-head .lang { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 700; }
+  .copy-btn { background: rgba(255,255,255,.07); border: 0; color: #cbd5e1; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--sans); transition: background .12s; }
+  .copy-btn:hover { background: rgba(255,255,255,.16); }
+  pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 13px; line-height: 1.6; }
+  pre code { background: none; color: inherit; padding: 0; white-space: pre; font-size: inherit; }
+  .cm { color: #64748b; font-style: italic; }
+  .kw { color: #c792ea; }
+  .st { color: #a5d6a7; }
+  .fn { color: #82aaff; }
+  .nm { color: #f78c6c; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--bg-soft); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+  td code { white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+
+  /* Callouts */
+  .callout { border-radius: 11px; padding: 16px 18px; margin: 18px 0; border: 1px solid; font-size: 14.5px; }
+  .callout p:first-child { margin-top: 0; } .callout p:last-child { margin-bottom: 0; }
+  .callout .ico { font-weight: 700; margin-right: 6px; }
+  .callout.note { background: var(--blue-bg); border-color: var(--blue-border); }
+  .callout.insight { background: var(--insight-bg); border-color: var(--insight-border); }
+  .callout.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+  .callout .title { font-weight: 700; color: var(--text); display:block; margin-bottom: 4px; }
+
+  /* Badges */
+  .badge { display:inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 20px; letter-spacing: .02em; }
+  .badge.high { background: var(--green-bg); color: var(--green); }
+  .badge.medium { background: var(--amber-bg); color: var(--amber); }
+  .badge.low { background: var(--red-bg); color: var(--red); }
+  .badge.method { background: var(--accent-soft); color: var(--accent); }
+
+  /* Pipeline */
+  .pipeline { display:flex; align-items:stretch; gap:0; flex-wrap:wrap; margin: 22px 0; }
+  .stage { flex: 1; min-width: 130px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 11px; padding: 14px 12px; text-align:center; position:relative; }
+  .stage .s-title { font-weight: 700; font-size: 13.5px; color: var(--text); }
+  .stage .s-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; font-family: var(--mono); }
+  .arrow { display:flex; align-items:center; color: var(--accent); font-size: 20px; padding: 0 6px; font-weight: 700; }
+  @media (max-width: 720px){ .arrow { transform: rotate(90deg); width:100%; justify-content:center; padding:4px 0; } .stage{ min-width:100%; } }
+
+  /* Cards */
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 14px; margin: 18px 0; }
+  .card { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .card h4 { margin: 0 0 6px; color: var(--text); }
+  .card p { margin: 0; font-size: 13.5px; }
+  .card .mono { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+
+  .example { border: 1px solid var(--border); border-radius: 12px; overflow:hidden; margin: 16px 0; }
+  .example .ex-q { background: var(--bg-soft); padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .example .ex-q b { color: var(--accent); }
+  .example .ex-body { padding: 14px 16px; }
+  .example .ex-row { font-size: 13.5px; margin: 5px 0; }
+  .example .ex-row .lbl { color: var(--muted); display:inline-block; min-width: 96px; }
+
+  .filetree { font-family: var(--mono); font-size: 13px; line-height: 1.85; background: var(--bg-soft); border:1px solid var(--border); border-radius: 11px; padding: 18px 22px; color: var(--text-soft); }
+  .filetree .dir { color: var(--accent); font-weight: 600; }
+  .filetree .cmt { color: var(--muted); }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+
+  /* Mobile */
+  .topbar { display:none; }
+  .scrim { display:none; }
+  @media (max-width: 980px) {
+    .sidebar { transform: translateX(-100%); transition: transform .25s ease; }
+    body.nav-open .sidebar { transform: translateX(0); }
+    main { margin-left: 0; padding: 76px 22px 100px; }
+    .topbar { display:flex; align-items:center; gap:12px; position:fixed; top:0; left:0; right:0; height:54px; background: var(--bg); border-bottom: 1px solid var(--border); z-index:90; padding: 0 18px; }
+    .topbar .ham { font-size: 22px; background:none; border:0; cursor:pointer; color: var(--text); }
+    .topbar .tb-title { font-weight: 700; font-size: 15px; }
+    body.nav-open .scrim { display:block; position:fixed; inset:0; background: rgba(0,0,0,.4); z-index:95; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="ham" id="ham">☰</button>
+  <span class="tb-title">Document QA Service</span>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <h1>Document QA Service</h1>
+    <div class="tag">Grounded RAG over a fixed knowledge base</div>
+    <div class="pills">
+      <span class="pill">FastAPI</span>
+      <span class="pill">TF-IDF</span>
+      <span class="pill">Extractive</span>
+      <span class="pill">27 tests</span>
+    </div>
+  </div>
+  <nav id="nav">
+    <div class="group-label">Get started</div>
+    <a href="#overview"><span class="num">01</span> Overview</a>
+    <a href="#quickstart"><span class="num">02</span> Quick Start</a>
+    <a href="#api"><span class="num">03</span> API Reference</a>
+    <div class="group-label">Design</div>
+    <a href="#architecture"><span class="num">04</span> Architecture</a>
+    <a href="#decisions"><span class="num">05</span> Design Decisions</a>
+    <a href="#adr"><span class="num">06</span> ADR &amp; Refinement</a>
+    <div class="group-label">Deep dive</div>
+    <a href="#walkthrough"><span class="num">07</span> Code Walkthrough</a>
+    <a href="#calibration"><span class="num">08</span> Calibration Story</a>
+    <a href="#testing"><span class="num">09</span> Testing</a>
+    <div class="group-label">Reference</div>
+    <a href="#tradeoffs"><span class="num">10</span> Tradeoffs</a>
+    <a href="#production"><span class="num">11</span> To Production</a>
+    <a href="#glossary"><span class="num">12</span> Glossary</a>
+  </nav>
+  <div class="sidebar-foot">
+    <button class="theme-btn" id="themeBtn"><span id="themeIco">🌙</span> <span id="themeLbl">Dark mode</span></button>
+    <a href="https://github.com/SurajAdsul/assignment" target="_blank">↗ View on GitHub</a>
+  </div>
+</aside>
+
+<main>
+
+  <!-- 01 OVERVIEW -->
+  <section id="overview">
+    <div class="hero">
+      <h2>Document QA Service</h2>
+      <p class="lead">A small HTTP API that answers questions over a fixed, in-memory knowledge base using retrieval-augmented generation — with citations, a confidence label, and a hard rule that it <strong>never asserts anything the documents don't say</strong>.</p>
+      <div class="guarantee">✓ Hallucination is structurally impossible</div>
+    </div>
+
+    <p>The four seed documents (refund policy, API rate limits, data retention, authentication) are embedded in the service, so it is fully self-contained: <strong>no network, no API keys, no external services</strong>. Ask a question, get back the supporting source sentences with their document citations — or an honest refusal when the knowledge base can't answer.</p>
+
+    <div class="grid">
+      <div class="card"><h4>🎯 Grounded</h4><p>Answers are stitched verbatim from retrieved sentences. There is no LLM to invent claims.</p></div>
+      <div class="card"><h4>🛡️ Safe by default</h4><p>Below a calibrated score floor, the service refuses instead of guessing.</p></div>
+      <div class="card"><h4>🔍 Observable</h4><p>Every response exposes the candidate chunks and their scores for debugging.</p></div>
+      <div class="card"><h4>⚡ Self-contained</h4><p>Hand-rolled TF-IDF, zero ML dependencies, instant startup.</p></div>
+    </div>
+
+    <div class="callout note">
+      <span class="title">How this project was built</span>
+      The design was stress-tested decision-by-decision before any code was written (a structured "grilling" session). The resulting domain glossary lives in <code>CONTEXT.md</code> and the one architectural decision worth preserving is recorded in <code>docs/adr/0001</code>. This page is the human-readable tour of all of it.
+    </div>
+  </section>
+
+  <!-- 02 QUICK START -->
+  <section id="quickstart">
+    <h2><span class="kicker">Get started</span>Quick Start</h2>
+    <p>Python 3.10+ is required. Set up a virtual environment, install dependencies, and run.</p>
+
+    <div class="code-block">
+      <div class="code-head"><span class="fname">terminal</span><span class="lang">bash</span></div>
+<pre><code><span class="nm">python3</span> -m venv .venv
+<span class="kw">source</span> .venv/bin/activate
+<span class="nm">pip</span> install -r requirements.txt
+
+<span class="cm"># Run the API (interactive docs at http://127.0.0.1:8000/docs)</span>
+<span class="nm">uvicorn</span> app.main:app --reload
+
+<span class="cm"># Run the test suite</span>
+<span class="nm">pytest</span></code></pre>
+    </div>
+
+    <h4>Try it</h4>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">grounded question</span><span class="lang">bash</span></div>
+<pre><code>curl -s -X POST localhost:8000/answer \
+  -H <span class="st">'Content-Type: application/json'</span> \
+  -d <span class="st">'{"question": "How long do I have to request a refund?"}'</span></code></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">unanswerable question → honest refusal</span><span class="lang">bash</span></div>
+<pre><code>curl -s -X POST localhost:8000/answer \
+  -H <span class="st">'Content-Type: application/json'</span> \
+  -d <span class="st">'{"question": "What is the capital of France?"}'</span></code></pre>
+    </div>
+
+    <div class="callout note"><span class="ico">💡</span> Visit <code>/docs</code> for the auto-generated, interactive Swagger UI — the request/response contract documents itself there.</div>
+  </section>
+
+  <!-- 03 API -->
+  <section id="api">
+    <h2><span class="kicker">Get started</span>API Reference</h2>
+
+    <h3><code>POST /answer</code></h3>
+    <p>The single endpoint. Accepts a question, returns a grounded answer.</p>
+
+    <h4>Request</h4>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Required</th><th>Notes</th></tr>
+      <tr><td><code>question</code></td><td>string</td><td>yes</td><td>Must be non-blank.</td></tr>
+      <tr><td><code>top_k</code></td><td>integer</td><td>no</td><td>Default <code>2</code>, range <code>1..3</code>. Out of range → <code>422</code>.</td></tr>
+    </table>
+
+    <h4>Response</h4>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">200 OK</span><span class="lang">json</span></div>
+<pre><code>{
+  <span class="st">"answer"</span>: <span class="st">"Customers may request a refund within 30 days of purchase. [doc_a]"</span>,
+  <span class="st">"citations"</span>: [{ <span class="st">"doc_id"</span>: <span class="st">"doc_a"</span>, <span class="st">"title"</span>: <span class="st">"Refund Policy"</span> }],
+  <span class="st">"confidence"</span>: <span class="st">"high"</span>,                 <span class="cm">// high | medium | low</span>
+  <span class="st">"used_chunks"</span>: [                      <span class="cm">// retrieved candidates + scores</span>
+    { <span class="st">"doc_id"</span>: <span class="st">"doc_a"</span>, <span class="st">"chunk_id"</span>: <span class="st">"doc_a::0"</span>, <span class="st">"score"</span>: <span class="nm">0.6336</span>,
+      <span class="st">"text"</span>: <span class="st">"Customers may request a refund within 30 days of purchase."</span> },
+    { <span class="st">"doc_id"</span>: <span class="st">"doc_b"</span>, <span class="st">"chunk_id"</span>: <span class="st">"doc_b::0"</span>, <span class="st">"score"</span>: <span class="nm">0.3473</span>,
+      <span class="st">"text"</span>: <span class="st">"Public API requests are limited to 100 requests per minute per API key."</span> }
+  ]
+}</code></pre>
+    </div>
+    <p>Invalid input (<code>top_k</code> out of range, blank/missing <code>question</code>, wrong type) returns <strong><code>422</code></strong> with Pydantic's standard <code>detail</code> payload. <code>GET /health</code> returns status and the document/chunk counts.</p>
+
+    <div class="callout insight">
+      <span class="title">⚖️ <code>citations</code> vs <code>used_chunks</code> — read this</span>
+      <p>These are intentionally different — the spec's field name ("used") versus its description ("retrieved") forced the question, and we resolved it deliberately:</p>
+      <ul>
+        <li><strong><code>citations</code></strong> is the <em>grounding</em> signal — documents that cleared the threshold and actually back the answer. <strong>This is what you show users.</strong></li>
+        <li><strong><code>used_chunks</code></strong> is the <em>observability</em> signal — every candidate retrieval surfaced, with its score, <em>including rejected ones</em>. Above, <code>doc_b</code> is a candidate (0.347) but is <strong>not cited</strong> — it's only a spurious word collision ("request a refund" vs "API <strong>requests</strong>").</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 04 ARCHITECTURE -->
+  <section id="architecture">
+    <h2><span class="kicker">Design</span>Architecture</h2>
+    <p>A request flows through four stages. Each is a small, independently testable module.</p>
+
+    <div class="pipeline">
+      <div class="stage"><div class="s-title">Question</div><div class="s-sub">+ top_k</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="s-title">Retrieve</div><div class="s-sub">TF-IDF · cosine</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="s-title">Ground</div><div class="s-sub">τ floor · rel. gate</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="s-title">Compose</div><div class="s-sub">extractive · [doc_id]</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="s-title">Response</div><div class="s-sub">answer · cites · conf</div></div>
+    </div>
+
+    <h3>1 · Chunking</h3>
+    <p>Each document is split into <strong>one chunk per sentence</strong>. The seed docs are written one fact per line, so tight chunks make for precise answers and fine-grained scoring. There are <strong>4 documents → 12 chunks</strong>.</p>
+
+    <h3>2 · Retrieval</h3>
+    <p>A hand-rolled <strong>TF-IDF with cosine similarity</strong>. Tokens are lowercased, stopword-filtered, and lightly stemmed (so <code>refund</code>/<code>refunds</code> match). Each chunk is indexed on its sentence <em>plus its document title</em>, so a topical question matches even when it shares no words with the exact answering sentence. It lives behind a <code>Retriever</code> protocol, so swapping in embeddings or a vector DB touches nothing else.</p>
+
+    <h3>3 · Grounding</h3>
+    <p>This stage owns the anti-hallucination policy via two thresholds with two distinct jobs (see <a href="#calibration">Calibration</a> for why two):</p>
+    <table>
+      <tr><th>Threshold</th><th>Value</th><th>Job</th></tr>
+      <tr><td><code>TAU</code></td><td>0.15</td><td><strong>Refusal floor.</strong> If the best chunk scores below it → refuse honestly.</td></tr>
+      <tr><td><code>RELATIVE_CUTOFF</code></td><td>0.6</td><td><strong>Citation gate.</strong> A supporting chunk joins the answer only if it scores ≥ 60% of the best chunk.</td></tr>
+    </table>
+    <p><code>top_k</code> is a <strong>ceiling, not a quota</strong>: asking for 3 chunks never forces 3 weak sentences into the answer.</p>
+
+    <h3>4 · Answering</h3>
+    <p>The answer is <strong>extractive</strong>: it <em>is</em> the retrieved source sentences, each tagged with <code>[doc_id]</code>. There is no language model, so the answer cannot contain a claim that isn't in the knowledge base.</p>
+
+    <h3>Confidence heuristic</h3>
+    <table>
+      <tr><th>Label</th><th>When</th></tr>
+      <tr><td><span class="badge low">low</span></td><td>Refusal — nothing cleared <code>TAU</code>.</td></tr>
+      <tr><td><span class="badge medium">medium</span></td><td>Answered, but the top score is weak (&lt; <code>TAU_HIGH</code> = 0.40) <strong>or</strong> the chunks cover &lt; 50% of the question's content terms.</td></tr>
+      <tr><td><span class="badge high">high</span></td><td>Strong top score <strong>and</strong> good question coverage.</td></tr>
+    </table>
+    <p>The coverage term keeps it honest on partially-answerable questions: ask something with five specific terms where only one matches the corpus, and you get <span class="badge medium">medium</span>, not a confident <span class="badge high">high</span>.</p>
+  </section>
+
+  <!-- 05 DECISIONS -->
+  <section id="decisions">
+    <h2><span class="kicker">Design</span>Design Decisions</h2>
+    <p>Every branch of the design tree was resolved deliberately before implementation. Here is the full record, with the reasoning behind each choice.</p>
+    <table>
+      <tr><th>Decision</th><th>Choice</th><th>Why</th></tr>
+      <tr><td>Answer generation</td><td><span class="badge method">Extractive</span></td><td>Hallucination structurally impossible; no API key/network; deterministic and testable.</td></tr>
+      <tr><td>Chunking</td><td>Sentence-level</td><td>Precise answers, fine-grained scoring; also satisfies the stretch goal.</td></tr>
+      <tr><td>Retrieval</td><td>Hand-rolled TF-IDF + cosine</td><td>Deterministic, tiny dependency footprint, legible. Behind a <code>Retriever</code> seam.</td></tr>
+      <tr><td>Normalization</td><td>lowercase + stopwords + stemmer</td><td>Recall on a tiny corpus; bridges <code>refund</code>/<code>refunds</code>.</td></tr>
+      <tr><td>Safeguard</td><td>Absolute refusal floor τ</td><td>Out-of-domain questions score 0; a floor cleanly catches them. τ calibrated, not guessed.</td></tr>
+      <tr><td>Per-chunk gating</td><td>Relative cutoff (refinement)</td><td>A single τ couldn't both admit sparse questions and reject spurious chunks. See ADR section.</td></tr>
+      <tr><td>Confidence</td><td>Top-score bands + coverage demotion</td><td>Honest about partial answers; few knobs to over-tune.</td></tr>
+      <tr><td><code>used_chunks</code></td><td>Candidates + scores, always</td><td>Observability — shows what was considered and why it refused.</td></tr>
+      <tr><td><code>citations</code></td><td><code>{doc_id, title}</code>, deduped</td><td>Clean "sources" signal, readable without an id→title lookup.</td></tr>
+      <tr><td><code>top_k</code> bounds</td><td>Reject with <code>422</code></td><td>Explicit contract, surfaces client bugs, gives a clean invalid-input test.</td></tr>
+      <tr><td>Framework</td><td>FastAPI + Uvicorn</td><td>Pydantic validation, <code>422</code>/detail errors, and OpenAPI docs come free.</td></tr>
+    </table>
+  </section>
+
+  <!-- 06 ADR -->
+  <section id="adr">
+    <h2><span class="kicker">Design</span>ADR &amp; The Threshold Refinement</h2>
+
+    <h3>ADR 0001 — Grounding over fluency</h3>
+    <div class="callout insight">
+      <span class="title">Decision</span>
+      <p>We answer by stitching together verbatim sentences retrieved from the knowledge base (each tagged with its <code>doc_id</code>) rather than generating prose with an LLM, and we refuse whenever no retrieved chunk clears the score threshold.</p>
+      <p><strong>Why it's recorded:</strong> a reviewer of a "RAG service" expects an LLM call and will ask "where's the model?" The explicit <strong>no-LLM-fallback</strong> stance matters most — it stops a future contributor from "improving" the service by bolting on a general-knowledge fallback, which would silently violate the core requirement that answers come only from the knowledge base.</p>
+    </div>
+    <p><strong>Consequence:</strong> answers read as terse quoted sentences, not conversational prose. That is the intended trade-off. If an LLM is ever added, it must be constrained to the retrieved chunks and verified against them — and this ADR superseded.</p>
+
+    <h3>The two-threshold refinement</h3>
+    <p>The original plan used a <em>single</em> absolute threshold τ to gate both the refusal decision and which chunks get cited. <strong>Calibration against real scores proved this can't work</strong> — and surfacing that contradiction is exactly what the design-review process is for.</p>
+    <div class="callout warn">
+      <span class="title">⚠️ Why one threshold failed</span>
+      <p>As a <strong>refusal floor</strong>, τ must be <em>low</em> (~0.15): the weakest legitimate question tops out at 0.456, so a high floor would refuse real questions. But as a <strong>citation gate</strong>, τ must be <em>higher</em>: a spurious cross-topic match scored <strong>0.347</strong>, which sits <em>below</em> genuine corroborating second chunks (0.44–0.48 in other queries). No single absolute number separates them.</p>
+    </div>
+    <p>The fix keeps the absolute floor for <em>refusal</em> and gates <em>supporting</em> chunks <strong>relative to the best chunk</strong> — a supporting chunk joins only if it scores ≥ 60% of the top score. That adapts per-query: it kills the over-citation (0.347 / 0.634 = 0.55 → dropped) while keeping real corroboration (0.483 / 0.525 = 0.92 → kept). This is a tuning refinement, not architecture, so it lives in code comments and the README rather than a formal ADR.</p>
+  </section>
+
+  <!-- 07 WALKTHROUGH -->
+  <section id="walkthrough">
+    <h2><span class="kicker">Deep dive</span>Code Walkthrough</h2>
+    <p>The service is a small Python package. Each module has one responsibility.</p>
+
+    <div class="filetree">
+<span class="dir">app/</span>
+  documents.py   <span class="cmt"># seed knowledge base (4 docs)</span>
+  chunking.py    <span class="cmt"># sentence-level chunking</span>
+  retrieval.py   <span class="cmt"># TF-IDF + cosine, behind a Retriever protocol</span>
+  answer.py      <span class="cmt"># grounding policy, confidence, extractive composition</span>
+  models.py      <span class="cmt"># Pydantic request/response schemas (input validation)</span>
+  service.py     <span class="cmt"># composition root (build the retriever)</span>
+  main.py        <span class="cmt"># FastAPI app: POST /answer, GET /health</span>
+<span class="dir">scripts/</span>
+  calibrate.py   <span class="cmt"># empirical threshold calibration</span>
+<span class="dir">tests/</span>          <span class="cmt"># pytest: api, answer, retrieval, chunking</span>
+CONTEXT.md       <span class="cmt"># domain glossary (ubiquitous language)</span>
+<span class="dir">docs/adr/</span>       <span class="cmt"># architecture decision records</span>
+    </div>
+
+    <h3>documents.py — the knowledge base</h3>
+    <p>The closed-world set of documents, as frozen dataclasses. Small enough to live in memory; nothing downstream assumes the literals, so a larger corpus would just load from storage.</p>
+    <table>
+      <tr><th>doc_id</th><th>Title</th><th>Facts</th></tr>
+      <tr><td><code>doc_a</code></td><td>Refund Policy</td><td>30-day window · no refund on consumed compute · enterprise terms</td></tr>
+      <tr><td><code>doc_b</code></td><td>API Rate Limits</td><td>100 req/min/key · HTTP 429 on burst · enterprise increases</td></tr>
+      <tr><td><code>doc_c</code></td><td>Data Retention</td><td>logs 14 days · files until deleted · removal within 7 days</td></tr>
+      <tr><td><code>doc_d</code></td><td>Authentication</td><td>bearer token · expires 60 min · refresh tokens</td></tr>
+    </table>
+
+    <h3>retrieval.py — normalization &amp; TF-IDF</h3>
+    <p>The conservative stemmer bridges the common morphology in this corpus without pulling in a real NLP library:</p>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">app/retrieval.py</span><span class="lang">python</span></div>
+<pre><code><span class="kw">def</span> <span class="fn">stem</span>(token: str) -&gt; str:
+    <span class="kw">if</span> len(token) &gt; 4 <span class="kw">and</span> token.endswith(<span class="st">"ies"</span>):
+        <span class="kw">return</span> token[:-3] + <span class="st">"y"</span>
+    <span class="kw">if</span> len(token) &gt; 4 <span class="kw">and</span> token.endswith(<span class="st">"ing"</span>):
+        <span class="kw">return</span> token[:-3]
+    <span class="kw">if</span> len(token) &gt; 4 <span class="kw">and</span> token.endswith(<span class="st">"ed"</span>):
+        <span class="kw">return</span> token[:-2]
+    <span class="kw">if</span> len(token) &gt; 3 <span class="kw">and</span> token.endswith(<span class="st">"s"</span>) <span class="kw">and</span> <span class="kw">not</span> token.endswith(<span class="st">"ss"</span>):
+        <span class="kw">return</span> token[:-1]   <span class="cm"># "refunds" → "refund", but "access" stays "access"</span>
+    <span class="kw">return</span> token</code></pre>
+    </div>
+    <p>Vectors are sparse dicts. IDF is smoothed (<code>log((n+1)/(df+1)) + 1</code>), vectors are L2-normalized, and out-of-vocabulary query terms are dropped so an unknown word never tanks the cosine score. Similarity is just the dot product of two normalized vectors.</p>
+
+    <h3>answer.py — the grounding core</h3>
+    <p>This is the heart of the safeguard. Refuse first; otherwise the best chunk always grounds the answer and supporting chunks must clear the relative cutoff:</p>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">app/answer.py</span><span class="lang">python</span></div>
+<pre><code>retrieved = retriever.search(question, top_k)
+used_chunks = [_serialize(sc) <span class="kw">for</span> sc <span class="kw">in</span> retrieved]   <span class="cm"># all candidates, always</span>
+
+<span class="kw">if</span> <span class="kw">not</span> retrieved <span class="kw">or</span> retrieved[0].score &lt; tau:
+    <span class="kw">return</span> AnswerResult(REFUSAL_TEXT, citations=[], confidence=<span class="st">"low"</span>, used_chunks=used_chunks)
+
+<span class="cm"># Best chunk always grounds; supporting chunks must be within RELATIVE_CUTOFF.</span>
+top_score = retrieved[0].score
+cutoff = max(tau, RELATIVE_CUTOFF * top_score)
+grounding = [sc <span class="kw">for</span> sc <span class="kw">in</span> retrieved <span class="kw">if</span> sc.score &gt;= cutoff]
+
+answer = <span class="st">" "</span>.join(f<span class="st">"{sc.chunk.text} [{sc.chunk.doc_id}]"</span> <span class="kw">for</span> sc <span class="kw">in</span> grounding)</code></pre>
+    </div>
+    <p>Confidence is then a pure function of the top score and question coverage — note that <code>low</code> is reserved for refusals, so the lowest <em>answered</em> tier is <code>medium</code>:</p>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">app/answer.py</span><span class="lang">python</span></div>
+<pre><code><span class="kw">def</span> <span class="fn">_confidence</span>(top_score: float, coverage: float) -&gt; str:
+    <span class="kw">if</span> top_score &gt;= TAU_HIGH:
+        <span class="kw">return</span> <span class="st">"high"</span> <span class="kw">if</span> coverage &gt;= COVERAGE_MIN <span class="kw">else</span> <span class="st">"medium"</span>
+    <span class="kw">return</span> <span class="st">"medium"</span></code></pre>
+    </div>
+
+    <h3>models.py — input validation</h3>
+    <p>Pydantic does validation declaratively, so bad input returns <code>422</code> with zero hand-written code and the contract self-documents in OpenAPI:</p>
+    <div class="code-block">
+      <div class="code-head"><span class="fname">app/models.py</span><span class="lang">python</span></div>
+<pre><code><span class="kw">class</span> <span class="fn">AnswerRequest</span>(BaseModel):
+    question: str = Field(..., min_length=1)
+    top_k: int = Field(2, ge=1, le=3)        <span class="cm"># out of range → 422</span>
+
+    <span class="nm">@field_validator</span>(<span class="st">"question"</span>)
+    <span class="nm">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">question_not_blank</span>(cls, value: str) -&gt; str:
+        <span class="kw">if</span> <span class="kw">not</span> value.strip():
+            <span class="kw">raise</span> ValueError(<span class="st">"question must not be blank"</span>)
+        <span class="kw">return</span> value</code></pre>
+    </div>
+
+    <h3>main.py — the endpoint</h3>
+    <p>The FastAPI app builds the retriever once at startup, maps the domain result to the response schema, and emits a structured, no-PII log line per request (<code>top_score</code>, <code>grounded</code>, <code>confidence</code>, <code>latency_ms</code>) — the raw signals you'd ship to metrics in production.</p>
+  </section>
+
+  <!-- 08 CALIBRATION -->
+  <section id="calibration">
+    <h2><span class="kicker">Deep dive</span>Calibration Story</h2>
+    <p>The thresholds are not guesses. <code>scripts/calibrate.py</code> runs 12 grounded and 6 out-of-domain questions and prints the score distributions.</p>
+
+    <div class="grid">
+      <div class="card"><h4>Out-of-domain</h4><p class="mono">all 0.0000</p><p>No shared vocabulary after stopword removal.</p></div>
+      <div class="card"><h4>Grounded</h4><p class="mono">0.46 – 0.87</p><p>A clean, wide, empty gap above zero.</p></div>
+      <div class="card"><h4>Chosen TAU</h4><p class="mono">0.15</p><p>Above zero-noise, far below the grounded floor.</p></div>
+    </div>
+
+    <p>That clean separation is what makes the refusal safeguard reliable: <em>"What is the capital of France?"</em> shares no content words with any chunk, scores exactly <strong>0.0</strong>, and is refused without ambiguity.</p>
+
+    <div class="callout insight">
+      <span class="title">🔬 Calibration caught a real bug</span>
+      <p>Probing with <code>top_k=2</code> revealed over-citation: <em>"How long do I have to request a refund?"</em> cited <strong>doc_b too</strong>, because "request" collides with "API <strong>requests</strong>". The data showed the spurious chunk scored 0.347 — below genuine corroboration in other queries — which is precisely why the <strong>relative cutoff</strong> replaced a second absolute threshold. (Full reasoning in the <a href="#adr">ADR section</a>.)</p>
+    </div>
+
+    <h4>Live behaviour after the fix</h4>
+    <div class="example">
+      <div class="ex-q"><b>Q:</b> How long do I have to request a refund?</div>
+      <div class="ex-body">
+        <div class="ex-row"><span class="lbl">answer</span> Customers may request a refund within 30 days of purchase. <code>[doc_a]</code></div>
+        <div class="ex-row"><span class="lbl">citations</span> <code>doc_a</code> &nbsp;<span style="color:var(--muted)">(doc_b at 0.347 shown in used_chunks but not cited)</span></div>
+        <div class="ex-row"><span class="lbl">confidence</span> <span class="badge high">high</span></div>
+      </div>
+    </div>
+    <div class="example">
+      <div class="ex-q"><b>Q:</b> How do I configure refund webhooks and notification email settings?</div>
+      <div class="ex-body">
+        <div class="ex-row"><span class="lbl">citations</span> <code>doc_a</code></div>
+        <div class="ex-row"><span class="lbl">confidence</span> <span class="badge medium">medium</span> &nbsp;<span style="color:var(--muted)">(only 1 of many terms matched → coverage demotion)</span></div>
+      </div>
+    </div>
+    <div class="example">
+      <div class="ex-q"><b>Q:</b> What is the capital of France?</div>
+      <div class="ex-body">
+        <div class="ex-row"><span class="lbl">answer</span> I don't have enough information in the knowledge base to answer that.</div>
+        <div class="ex-row"><span class="lbl">citations</span> <span style="color:var(--muted)">(none)</span></div>
+        <div class="ex-row"><span class="lbl">confidence</span> <span class="badge low">low</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 TESTING -->
+  <section id="testing">
+    <h2><span class="kicker">Deep dive</span>Testing</h2>
+    <p><strong>27 tests</strong> across four files run in ~0.03s. They cover the three required cases plus the contract guarantees and a regression test for the over-citation fix.</p>
+    <div class="grid">
+      <div class="card"><h4>test_api.py</h4><p>End-to-end via FastAPI's <code>TestClient</code>: grounded answer, refusal, invalid input (×5), <code>top_k</code> ceiling, citation/used_chunk shape, no-over-citation.</p></div>
+      <div class="card"><h4>test_answer.py</h4><p>Confidence bands, coverage demotion, the relative-cutoff gate, and refusal behaviour at the domain layer.</p></div>
+      <div class="card"><h4>test_retrieval.py</h4><p>Stemming, stopword removal, correct top-document ranking, zero-score for out-of-domain, determinism.</p></div>
+      <div class="card"><h4>test_chunking.py</h4><p>Sentence splitting (12 chunks), unique namespaced chunk ids, title carry-through.</p></div>
+    </div>
+    <p>The three explicitly required cases — a <strong>grounded answer</strong>, an <strong>unanswerable question</strong>, and <strong>invalid input</strong> — are each covered, the last by five distinct rejection tests (too-large <code>top_k</code>, zero, blank question, missing question, wrong type).</p>
+  </section>
+
+  <!-- 10 TRADEOFFS -->
+  <section id="tradeoffs">
+    <h2><span class="kicker">Reference</span>Tradeoffs &amp; Limitations</h2>
+    <ul>
+      <li><strong>Extractive, not generative.</strong> Answers are stitched source sentences, not fluent prose — a deliberate trade for a guaranteed no-hallucination property and zero external dependencies.</li>
+      <li><strong>Lexical retrieval misses synonyms.</strong> "How long until my data is purged?" won't match "retained"/"removal" well. Embeddings would fix this at the cost of a heavy dependency — not worth it at this scale.</li>
+      <li><strong>The stemmer is crude.</strong> It bridges plurals and common suffixes but will miss pairs like <code>delete</code>/<code>deletion</code>. Conservative by design.</li>
+      <li><strong>TF-IDF is hand-rolled, not scikit-learn.</strong> Keeps the footprint tiny and the algorithm legible; behind the <code>Retriever</code> seam it's a drop-in swap.</li>
+      <li><strong>Thresholds tuned on a tiny sample.</strong> Defensible for a prototype; production would calibrate on logged real queries.</li>
+    </ul>
+  </section>
+
+  <!-- 11 PRODUCTION -->
+  <section id="production">
+    <h2><span class="kicker">Reference</span>If This Went to Production</h2>
+    <div class="grid">
+      <div class="card"><h4>🔎 Retrieval quality</h4><p>Hybrid search — combine dense embeddings with the lexical score (reciprocal-rank fusion); a real lemmatizer; query expansion; re-rank top candidates.</p></div>
+      <div class="card"><h4>📊 Observability</h4><p>Ship the existing log signals as metrics: <strong>refusal rate</strong>, <strong>confidence distribution</strong>, and <strong>score histograms</strong> are the early warnings that the corpus or thresholds have drifted. Trace IDs; sampled, consented QA logging for offline eval.</p></div>
+      <div class="card"><h4>✅ Evaluation</h4><p>A labelled question→expected-doc set in CI to catch retrieval regressions; track grounding precision/recall as the corpus changes.</p></div>
+      <div class="card"><h4>🔒 Hardening</h4><p>Auth, rate limiting, request size limits, and per-tenant knowledge bases.</p></div>
+    </div>
+  </section>
+
+  <!-- 12 GLOSSARY -->
+  <section id="glossary">
+    <h2><span class="kicker">Reference</span>Glossary</h2>
+    <p>The ubiquitous language used throughout the code, from <code>CONTEXT.md</code>.</p>
+    <table>
+      <tr><th>Term</th><th>Meaning</th></tr>
+      <tr><td><strong>Knowledge base</strong></td><td>The fixed, closed set of seed documents the service may answer from. Closed-world — anything not in it is unknown.</td></tr>
+      <tr><td><strong>Document</strong></td><td>One seed item, identified by a stable <code>doc_id</code> and title. The unit of citation.</td></tr>
+      <tr><td><strong>Chunk</strong></td><td>A single retrievable sentence, tagged with its parent document. The unit of retrieval.</td></tr>
+      <tr><td><strong>Answer</strong></td><td>The response, composed only of verbatim sentences from the knowledge base.</td></tr>
+      <tr><td><strong>Grounded</strong></td><td>Property where every statement traces back to a retrieved source. Ungrounded claims are defects.</td></tr>
+      <tr><td><strong>Citation</strong></td><td>A reference by <code>doc_id</code> to a document that cleared the threshold and backs the answer.</td></tr>
+      <tr><td><strong>Used chunk</strong></td><td>A retrieved candidate reported with its score for observability — cited or not.</td></tr>
+      <tr><td><strong>Refusal</strong></td><td>The response when nothing clears the floor: honest "not enough information", no citations, low confidence.</td></tr>
+      <tr><td><strong>Confidence</strong></td><td>Self-assessed reliability — high/medium/low — from retrieval strength and question coverage.</td></tr>
+    </table>
+    <hr />
+    <p style="text-align:center; color:var(--muted); font-size:13px;">Document QA Service · Built grounding-first · <a href="https://github.com/SurajAdsul/assignment" target="_blank">github.com/SurajAdsul/assignment</a></p>
+  </section>
+
+</main>
+
+<script>
+  // Theme toggle
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('themeBtn');
+    var ico = document.getElementById('themeIco'), lbl = document.getElementById('themeLbl');
+    var saved = null;
+    try { saved = localStorage.getItem('docqa-theme'); } catch (e) {}
+    if (saved) root.setAttribute('data-theme', saved);
+    function sync() {
+      var dark = root.getAttribute('data-theme') === 'dark';
+      ico.textContent = dark ? '☀️' : '🌙';
+      lbl.textContent = dark ? 'Light mode' : 'Dark mode';
+    }
+    sync();
+    btn.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('docqa-theme', next); } catch (e) {}
+      sync();
+    });
+  })();
+
+  // Mobile nav
+  (function () {
+    var body = document.body, ham = document.getElementById('ham'), scrim = document.getElementById('scrim');
+    function close() { body.classList.remove('nav-open'); }
+    ham.addEventListener('click', function () { body.classList.toggle('nav-open'); });
+    scrim.addEventListener('click', close);
+    document.querySelectorAll('#nav a').forEach(function (a) { a.addEventListener('click', close); });
+  })();
+
+  // Copy buttons
+  document.querySelectorAll('.code-block').forEach(function (block) {
+    var head = block.querySelector('.code-head');
+    var pre = block.querySelector('pre');
+    if (!head || !pre) return;
+    var btn = document.createElement('button');
+    btn.className = 'copy-btn'; btn.textContent = 'Copy';
+    head.appendChild(btn);
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(pre.innerText).then(function () {
+        btn.textContent = 'Copied!';
+        setTimeout(function () { btn.textContent = 'Copy'; }, 1400);
+      });
+    });
+  });
+
+  // Scrollspy
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+    var map = {};
+    links.forEach(function (l) { map[l.getAttribute('href').slice(1)] = l; });
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.remove('active'); });
+          var active = map[e.target.id];
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-10% 0px -78% 0px', threshold: 0 });
+    document.querySelectorAll('main section').forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>
