@@ -1,5 +1,8 @@
 # Document QA Service
 
+> 📖 **[Live project walkthrough →](https://surajadsul.github.io/assignment/)**
+> — architecture, design decisions, ADR, and a full code tour with the calibration story.
+
 A small HTTP API that answers questions over a fixed, in-memory knowledge base
 using retrieval-augmented generation — with **citations**, a **confidence**
 label, and a hard rule that it **never asserts anything the documents don't say**.
